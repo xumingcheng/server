@@ -41,29 +41,8 @@ std::array<int, 3>typeIO{0};
 #if EV
 #include <ev.h>
 #endif
-struct worker
-{
-    ev_io _io;
-//private:
-    struct ev_loop *loop;
-
-};
-void workerRun(std::unique_ptr<worker> pworker)
-{
-
-}
-int get_ev_loop_flags() {
-    if (ev_supported_backends() & ~ev_recommended_backends() & EVBACKEND_KQUEUE) {
-        return ev_recommended_backends() | EVBACKEND_KQUEUE;
-    }
-
-    return 0;
-}
-void worker_acceptcb(struct ev_loop *loop, ev_async *w, int revents)
-{
-
-}
-class FServer :public  NetEvent{
+//class FServer;
+class FServer{
 public :
     FServer():_socket(INVALID_SOCKET)
     {
@@ -128,58 +107,10 @@ public :
         {
             LOG_MSG(1,"accept fail socket:[%lld]",_socket);
         }
-        serverAddClient(new cellClient(cSocket));
+        //serverAddClient(new cellClient(cSocket));
 
     }
-    void serverAddClient(cellClient *pcellClient)
-    {
-       auto _mincellserver = _pcellServer[0];
-       for(auto _cellServer : _pcellServer)
-       {
-           if(_cellServer->getclientcount() > _mincellserver->getclientcount())
-           {
-               _mincellserver = _cellServer;
-           }
-       }
-       _mincellserver->cellAddClient(pcellClient);
-    }
-    void start(int n)
-    {
-      for(int i = 0;i < n;i++)
-      {
-          auto cellSer = new cellServer(i+1);
-          _pcellServer.push_back(cellSer);
-          cellSer->SetEvent(this);
-          cellSer->cellStart();
-      }
-    }
-    void evStart(int n)
-    {
-      for(auto i= 0;i < n;i++)
-      {
-          auto _woker = std::make_unique<worker>();
-          auto loop = ev_loop_new(get_ev_loop_flags());
-          _woker->loop = &loop;
-          _woker->_io.data = _woker.get();
-          ev_async_init(_woker->_io, worker_acceptcb);
-          ev_async_start(loop,&_woker->_io);
-          std::thread t (workerRun,std::move(_woker));
-          _pWorker.push_back(_woker);
-      }
 
-    }
-   virtual void ClientEventAdd(cellClient *ptClient )
-    {
-      _clientcount ++;
-    }
-    virtual void ClientEventLeave(cellClient *ptClient )
-    {
-        _clientcount--;
-    }
-    virtual void ClientEventRec(cellClient *ptClient )
-    {
-
-    }
     void Close()
     {
 
@@ -189,7 +120,7 @@ private:
     {
       while(_serverIsRun)
       {
-#if SELECT
+#if 0
           serverTimeMsg();
           fd_set fdRead;
           FD_ZERO(&fdRead);
@@ -224,12 +155,9 @@ private:
     }
     int _clientcount;
     SOCKET _socket;
-    std::vector<cellServer *> _pcellServer;
-    std::vector<std::unique_ptr<worker>> _pWorker;
+   // std::vector<cellServer *> _pcellServer;
     bool _serverIsRun;
-
-
-
+   // ev_io io_watcher;
 };
 
 

@@ -1,6 +1,6 @@
 #include <iostream>
 #include <cstdio>
-#include "MyServer.hpp"
+#include "myServer.hpp"
 #include <getopt.h>
 #include "evAcceptHandler.h"
 #include <memory>
@@ -54,15 +54,16 @@ int main(int argc,char **argv) {
       }
     }
     std::cout << "Hello, World!" << std::endl;
-    auto _pmyServer = std::make_shared<MyServer>();
+    //auto _pmyServer = std::make_shared<FServer>();
 #ifdef SELECT
-    _pmyServer->initsoket();
-    _pmyServer->Bind("127.0.0.1",4567);
-    _pmyServer->Listen(64);
-    _pmyServer->start(4);
+    //_pmyServer->initsoket();
+   // _pmyServer->Bind("127.0.0.1",4567);
+   // _pmyServer->Listen(64);
+   // _pmyServer->start(4);
 //#else
     auto loop = EV_DEFAULT;
-    new evServer(&loop,_pmyServer);
+    auto evS = new evServer ;
+    auto sS = new sServer ;
 
 
     ev_run(loop,0);

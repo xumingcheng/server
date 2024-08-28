@@ -1,24 +1,41 @@
 //
 // Created by 请输入我的名字 on 2024/8/13.
 //
-#include "network.hpp"
-#include "cellClient.hpp"
-
 #ifndef UN_MYSERVER_HPP
 #define UN_MYSERVER_HPP
-class MyServer :public FServer
+#include "network.hpp"
+#include "cellClient.hpp"
+class sServer :public FServer
 {
-    virtual void ClientEventAdd(cellClient *ptClient ){
-
-        FServer::ClientEventAdd(ptClient);
-   }
-    virtual void ClientEventLeave(cellClient *ptClient ){
-
-        FServer::ClientEventLeave(ptClient);
+   public:
+    sServer()
+    {
+        Bind("154",145);
     }
-    virtual void ClientEventRec(cellClient *ptClient ){
 
-        FServer::ClientEventRec(ptClient);
+    void serverAddClient(cellClient *pcellClient)
+    {
+        auto _mincellserver = _pcellServer[0];
+        for(auto _cellServer : _pcellServer)
+        {
+            if(_cellServer->getclientcount() > _mincellserver->getclientcount())
+            {
+                _mincellserver = _cellServer;
+            }
+        }
+        _mincellserver->cellAddClient(pcellClient);
     }
+    void start(int n)
+    {
+        for(int i = 0;i < n;i++)
+        {
+            auto cellSer = new cellServer(i+1);
+            _pcellServer.push_back(cellSer);
+           // cellSer->SetEvent(this);
+            cellSer->cellStart();
+        }
+    }
+    private :
+    std::vector<cellServer *> _pcellServer;
 };
 #endif //UN_MYSERVER_HPP
