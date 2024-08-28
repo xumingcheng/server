@@ -18,6 +18,7 @@
 	#include<string.h>
 	#include<signal.h>
 	#include<sys/socket.h>
+#include <array>
 
 	#define SOCKET int
 	#define INVALID_SOCKET  (SOCKET)(~0)
@@ -40,6 +41,28 @@ std::array<int, 3>typeIO{0};
 #if EV
 #include <ev.h>
 #endif
+struct worker
+{
+    ev_io _io;
+//private:
+    struct ev_loop *loop;
+
+};
+void workerRun(std::unique_ptr<worker> pworker)
+{
+
+}
+int get_ev_loop_flags() {
+    if (ev_supported_backends() & ~ev_recommended_backends() & EVBACKEND_KQUEUE) {
+        return ev_recommended_backends() | EVBACKEND_KQUEUE;
+    }
+
+    return 0;
+}
+void worker_acceptcb(struct ev_loop *loop, ev_async *w, int revents)
+{
+
+}
 class FServer :public  NetEvent{
 public :
     FServer():_socket(INVALID_SOCKET)
@@ -51,16 +74,20 @@ public :
        otherdep::Init();
        if(_socket != INVALID_SOCKET)
        {
-           LOG_MSG(1,"config is wrong Close Server socket [%d]",_socket);
+           LOG_MSG(1,"config is wrong Close Server socket [%lld]",_socket);
            Close();
        }
        _socket = socket(AF_INET,SOCK_STREAM,IPPROTO_TCP);
        if(_socket == INVALID_SOCKET)
        {
-           LOG_MSG(1,"create Socket fail  Close Server socket [%d]",_socket);
+           LOG_MSG(1,"create Socket fail  Close Server socket [%lld]",_socket);
            Close();
        }
-        LOG_MSG(0,"create Socket Success   socket [%d]",_socket);
+        LOG_MSG(0,"create Socket Success   socket [%lld]",_socket);
+    }
+    SOCKET getSocket()
+    {
+      return _socket;
     }
     void Bind(const char*Ip ,int port)
     {
@@ -72,12 +99,12 @@ public :
         ret = bind(_socket,(sockaddr*)&_sin,sizeof(_sin));
         if(ret != 0)
         {
-            LOG_MSG(1,"bind Socket fail  Close Server socket [%d]",_socket);
+            LOG_MSG(1,"bind Socket fail  Close Server socket [%lld]",_socket);
             Close();
         }
         else
         {
-            LOG_MSG(0,"bind Socket Success   socket [%d]",_socket);
+            LOG_MSG(0,"bind Socket Success   socket [%lld]",_socket);
         }
     }
     void Listen( int n)
@@ -86,17 +113,17 @@ public :
        ret = listen(_socket,n);
        if(ret != 0)
        {
-           LOG_MSG(1,"listen  Socket fail  Close Server socket [%d]",_socket);
+           LOG_MSG(1,"listen  Socket fail  Close Server socket [%lld]",_socket);
            Close();
        }
-        LOG_MSG(0,"listen  Socket success  Server socket [%d]",_socket);
+        LOG_MSG(0,"listen  Socket success  Server socket [%lld]",_socket);
     }
     void Accept()
     {
        SOCKET cSocket = INVALID_SOCKET;
        struct sockaddr_in addr = {0};
        int n = sizeof(sockaddr_in);
-        cSocket = accept(_socket,(sockaddr*)&addr,&n);
+        cSocket = accept(_socket, (sockaddr*)&addr, reinterpret_cast<socklen_t *>(&n));
         if(cSocket == INVALID_SOCKET)
         {
             LOG_MSG(1,"accept fail socket:[%lld]",_socket);
@@ -125,8 +152,20 @@ public :
           cellSer->SetEvent(this);
           cellSer->cellStart();
       }
-
-
+    }
+    void evStart(int n)
+    {
+      for(auto i= 0;i < n;i++)
+      {
+          auto _woker = std::make_unique<worker>();
+          auto loop = ev_loop_new(get_ev_loop_flags());
+          _woker->loop = &loop;
+          _woker->_io.data = _woker.get();
+          ev_async_init(_woker->_io, worker_acceptcb);
+          ev_async_start(loop,&_woker->_io);
+          std::thread t (workerRun,std::move(_woker));
+          _pWorker.push_back(_woker);
+      }
 
     }
    virtual void ClientEventAdd(cellClient *ptClient )
@@ -184,8 +223,9 @@ private:
 
     }
     int _clientcount;
-    long long int _socket;
+    SOCKET _socket;
     std::vector<cellServer *> _pcellServer;
+    std::vector<std::unique_ptr<worker>> _pWorker;
     bool _serverIsRun;
 
 

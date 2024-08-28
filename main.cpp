@@ -1,8 +1,10 @@
 #include <iostream>
 #include <cstdio>
-#include "module/myServer.hpp"
+#include "MyServer.hpp"
 #include <getopt.h>
-std::array<int, 3>typeIO{0};
+#include "evAcceptHandler.h"
+#include <memory>
+
 int main(int argc,char **argv) {
     int opt_index = 0;
     struct option long_options[]=
@@ -52,14 +54,15 @@ int main(int argc,char **argv) {
       }
     }
     std::cout << "Hello, World!" << std::endl;
-    MyServer myServer;
-    myServer.initsoket();
-    myServer.Bind("127.0.0.1",4567);
-    myServer.Listen(64);
+    auto _pmyServer = std::make_shared<MyServer>();
 #ifdef SELECT
-    myServer.start(4);
-#else
+    _pmyServer->initsoket();
+    _pmyServer->Bind("127.0.0.1",4567);
+    _pmyServer->Listen(64);
+    _pmyServer->start(4);
+//#else
     auto loop = EV_DEFAULT;
+    new evServer(&loop,_pmyServer);
 
 
     ev_run(loop,0);
