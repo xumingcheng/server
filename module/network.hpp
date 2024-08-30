@@ -27,8 +27,12 @@
 #include "Event.h"
 #include <map>
 #include <vector>
+#include <wspiapi.h>
 #include "dep.hpp"
 #include "cellServer.hpp"
+#include "evAcceptHandler.h"
+
+
 enum {
     EV_TYPE = 0,
     EPOLL_TYPE  ,
@@ -41,12 +45,32 @@ std::array<int, 3>typeIO{0};
 #if EV
 #include <ev.h>
 #endif
-//class FServer;
+class FServer;
+
+namespace RUN{
+    void listenAcceptcb(Ev_loop *loop,Ev_io *ioWatcher,int event)
+    {
+        auto* ser = static_cast<FServer*>ioWatcher->data ;
+        //ser->_evs.
+        ser->AcceptHandler();
+    }
+}
 class FServer{
 public :
+    FServer(std::shared_ptr<evServer>pevs,Ev_loop *_loop):_socket(INVALID_SOCKET),_evs(std::move(pevs)),_loop(_loop)
+    {
+        initsoket();
+        Bind("172.20.140.103",4569);
+        Listen(64);
+        ev_io_init(&_ioWatcher,RUN::listenAcceptcb,getSocket(),EV_READ);
+        _ioWatcher.data = this;
+        ev_io_start(_loop,&_ioWatcher);
+    }
     FServer():_socket(INVALID_SOCKET)
     {
-
+        initsoket();
+        Bind("172.20.140.103",4569);
+        Listen(64);
     }
     void initsoket()
     {
@@ -97,9 +121,19 @@ public :
        }
         LOG_MSG(0,"listen  Socket success  Server socket [%lld]",_socket);
     }
-    void Accept()
+    void AcceptHandler()
     {
        SOCKET cSocket = INVALID_SOCKET;
+       for(;true;)
+       {
+           cSocket = accept(_socket, nullptr, nullptr);
+           if(cSocket == INVALID_SOCKET)
+           {
+               break;
+           }
+           _evs->acceptConnect(cSocket);
+
+       }
        struct sockaddr_in addr = {0};
        int n = sizeof(sockaddr_in);
         cSocket = accept(_socket, (sockaddr*)&addr, reinterpret_cast<socklen_t *>(&n));
@@ -107,10 +141,8 @@ public :
         {
             LOG_MSG(1,"accept fail socket:[%lld]",_socket);
         }
-        //serverAddClient(new cellClient(cSocket));
 
     }
-
     void Close()
     {
 
@@ -142,22 +174,21 @@ private:
           auto loop = EV_DEFAULT;
 
           ev_run(loop,0);
-
-
 #endif
       }
-
-
     }
     void serverTimeMsg()
     {
 
     }
+
     int _clientcount;
     SOCKET _socket;
-   // std::vector<cellServer *> _pcellServer;
     bool _serverIsRun;
-   // ev_io io_watcher;
+    std::shared_ptr<evServer> _evs;
+    Ev_loop * _loop;
+    Ev_io _ioWatcher;
+
 };
 
 

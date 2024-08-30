@@ -54,19 +54,18 @@ int main(int argc,char **argv) {
       }
     }
     std::cout << "Hello, World!" << std::endl;
-    //auto _pmyServer = std::make_shared<FServer>();
-#ifdef SELECT
-    //_pmyServer->initsoket();
-   // _pmyServer->Bind("127.0.0.1",4567);
-   // _pmyServer->Listen(64);
-   // _pmyServer->start(4);
 //#else
-    auto loop = EV_DEFAULT;
-    auto evS = new evServer ;
-    auto sS = new sServer ;
-
-
+    Ev_loop loop = EV_DEFAULT;
+   // auto evS = new evServer ;
+    auto _evServer = std::make_shared<evServer>();
+    _evServer->evStart(4);
+    new FServer(_evServer,&loop);
     ev_run(loop,0);
 
-#endif
+
+     //evServer  v(&loop);
+
+
+    //ev_run(loop,0);
+
 }
