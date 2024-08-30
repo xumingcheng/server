@@ -59,6 +59,11 @@ public:
             _count = 0;
         }
         //四个线程确保只有一个线程访问去访问worker
+        {
+            std::lock_guard<std::mutex> lock(_workerItem->_mutex);
+            _workerItem->addClient(new cellClient(fd));
+        }
+
 
 
 

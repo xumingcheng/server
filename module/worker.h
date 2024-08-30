@@ -5,12 +5,14 @@
 #ifndef SERVER_WORKER_H
 #define SERVER_WORKER_H
 #include <deque>
+#include <mutex>
 typedef struct ev_loop Ev_loop;
 typedef  ev_io Ev_io;
 struct worker
 {
 public:
     ev_async _io;
+    std::mutex _mutex;
     Ev_loop* get_loop()
     {
         return _loop;
@@ -18,6 +20,10 @@ public:
     void set_loop(Ev_loop *loop)
     {
         _loop = loop;
+    }
+    void addClient(cellClient *pclient)
+    {
+        _cellClientbuf.push_back(pclient);
     }
 private:
     Ev_loop *_loop;
