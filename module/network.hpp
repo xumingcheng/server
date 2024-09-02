@@ -32,7 +32,6 @@
 #include "cellServer.hpp"
 #include "evAcceptHandler.h"
 
-
 enum {
     EV_TYPE = 0,
     EPOLL_TYPE  ,
@@ -50,9 +49,9 @@ class FServer;
 namespace RUN{
     void listenAcceptcb(Ev_loop *loop,Ev_io *ioWatcher,int event)
     {
-        auto* ser = static_cast<FServer*>ioWatcher->data ;
+        auto ser = static_cast<FServer*>ioWatcher->data ;
         //ser->_evs.
-        ser->AcceptHandler();
+        ser->Accept();
     }
 }
 class FServer{
@@ -121,7 +120,7 @@ public :
        }
         LOG_MSG(0,"listen  Socket success  Server socket [%lld]",_socket);
     }
-    void AcceptHandler()
+    void Accept()
     {
        SOCKET cSocket = INVALID_SOCKET;
        for(;true;)
@@ -131,7 +130,7 @@ public :
            {
                break;
            }
-           _evs->acceptConnect(cSocket);
+           _evs->acceptConnect(_socket);
 
        }
        struct sockaddr_in addr = {0};

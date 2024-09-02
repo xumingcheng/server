@@ -58,6 +58,7 @@ int main(int argc,char **argv) {
     Ev_loop loop = EV_DEFAULT;
    // auto evS = new evServer ;
     auto _evServer = std::make_shared<evServer>();
+
     _evServer->evStart(4);
     new FServer(_evServer,&loop);
     ev_run(loop,0);

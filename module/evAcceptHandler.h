@@ -8,6 +8,7 @@
 #include "cellClient.hpp"
 #include <deque>
 #include "worker.h"
+#include "session.h"
 void workerRun(worker* pworker)
 {
     ev_asyn_run(pworker->get_loop(),0);
@@ -25,6 +26,17 @@ int get_ev_loop_flags() {
 }
 void worker_acceptcb(struct ev_loop *loop, ev_async *_w, int revents)
 {
+    worker* _worker = static_cast<worker*>_w->data;
+    std::deque<cellClient *>_cellClient_buf;
+    {
+        std::lock_guard<std::mutex>lock(_worker->_mutex);
+        _cellClient_buf.swap(_worker->_cellClientbuf);
+    }
+    for(auto &client:_cellClient_buf)
+    {
+        _worker->_session->acceptConnect_handle(client);
+    }
+
 
 }
 class evServer
@@ -40,11 +52,13 @@ public:
         {
             auto _woker = std::make_unique<worker>();
             auto loop = ev_loop_new(get_ev_loop_flags());
-            _woker->set_loop(&loop) ;
+            // _woker->set_loop(&loop) ;
             _woker->_io.data = _woker.get();
+            _woker->_session = std::make_unique<session>(loop);
             ev_async_init(_woker->_io, worker_acceptcb);
             ev_async_start(loop,&_woker->_io);
             std::thread t (workerRun,_woker.get());
+            t.detach();
             _pWorker.push_back(_woker);
         }
     }
@@ -59,15 +73,8 @@ public:
             _count = 0;
         }
         //四个线程确保只有一个线程访问去访问worker
-        {
-            std::lock_guard<std::mutex> lock(_workerItem->_mutex);
-            _workerItem->addClient(new cellClient(fd));
-        }
-
-
-
-
-
+        _workerItem->addClient(new cellClient(fd));
+        ev_async_send(_workerItem->_session->get_loop(), &_workerItem->_io);
     }
 
 private:

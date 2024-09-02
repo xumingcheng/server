@@ -40,4 +40,8 @@ public:
 
 #define LOG_MSG(level,format,...) \
 printf("%s <%s:%d> " format "\n",level==0? "INFO":"ERROR",__FUNCTION__,__LINE__,##__VA_ARGS__);
+typedef struct ev_loop Ev_loop;
+typedef  ev_io Ev_io;
+#define Handle_Ok 1
+#define Handle_Fail 0
 #endif //UN_DEP_HPP

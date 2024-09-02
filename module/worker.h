@@ -6,27 +6,23 @@
 #define SERVER_WORKER_H
 #include <deque>
 #include <mutex>
-typedef struct ev_loop Ev_loop;
-typedef  ev_io Ev_io;
+#include "session.h"
 struct worker
 {
 public:
     ev_async _io;
     std::mutex _mutex;
-    Ev_loop* get_loop()
-    {
-        return _loop;
-    }
-    void set_loop(Ev_loop *loop)
-    {
-        _loop = loop;
-    }
+    std::deque<cellClient *>_cellClientbuf;
+    std::unique_ptr<session> _session;
     void addClient(cellClient *pclient)
     {
+        std::lock_guard<std::mutex> lock(_mutex);
         _cellClientbuf.push_back(pclient);
     }
+
 private:
-    Ev_loop *_loop;
-    std::deque<cellClient *>_cellClientbuf;
+    SOCKET _fd;
+    //Ev_loop *_loop;
+
 };
 #endif //SERVER_WORKER_H
